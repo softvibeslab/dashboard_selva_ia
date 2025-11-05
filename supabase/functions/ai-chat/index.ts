@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+async function callAnthropicAPI(apiKey: string, payload: any): Promise<Response> {
+  return await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -16,35 +28,62 @@ Deno.serve(async (req: Request) => {
 
   try {
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    const ANTHROPIC_API_KEY_ALTERNATIVE = Deno.env.get('ANTHROPIC_API_KEY_ALTERNATIVE');
     
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
+    if (!ANTHROPIC_API_KEY && !ANTHROPIC_API_KEY_ALTERNATIVE) {
+      throw new Error('No API keys configured');
     }
 
     const { messages, system, tools, model = 'claude-3-5-sonnet-20241022', max_tokens = 2048 } = await req.json();
 
     console.log('🤖 Processing AI request with', messages?.length || 0, 'messages');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens,
-        system,
-        messages,
-        tools,
-      }),
-    });
+    const payload = {
+      model,
+      max_tokens,
+      system,
+      messages,
+      tools,
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Anthropic API Error:', response.status, errorText);
-      throw new Error(`Anthropic API Error: ${response.status} - ${errorText}`);
+    let response: Response | null = null;
+    let lastError: string = '';
+
+    // Try primary API key first
+    if (ANTHROPIC_API_KEY) {
+      console.log('🔑 Trying primary API key...');
+      response = await callAnthropicAPI(ANTHROPIC_API_KEY, payload);
+      
+      if (response.ok) {
+        console.log('✅ Primary API key worked');
+      } else {
+        const errorText = await response.text();
+        lastError = errorText;
+        console.log('⚠️ Primary API key failed:', response.status, errorText);
+        
+        // Check if it's a credit issue
+        if (errorText.includes('credit balance') || response.status === 400) {
+          console.log('💳 Credit issue detected, trying alternative key...');
+          response = null;
+        }
+      }
+    }
+
+    // Fallback to alternative API key if primary failed or not available
+    if (!response && ANTHROPIC_API_KEY_ALTERNATIVE) {
+      console.log('🔄 Using alternative API key...');
+      response = await callAnthropicAPI(ANTHROPIC_API_KEY_ALTERNATIVE, payload);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Alternative API key also failed:', response.status, errorText);
+        throw new Error(`Both API keys failed. Last error: ${errorText}`);
+      }
+      console.log('✅ Alternative API key worked');
+    }
+
+    if (!response) {
+      throw new Error(`API call failed: ${lastError}`);
     }
 
     const data = await response.json();
