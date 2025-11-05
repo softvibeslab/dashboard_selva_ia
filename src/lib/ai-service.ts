@@ -35,6 +35,11 @@ async function callEdgeFunction(payload: any): Promise<any> {
 
 export async function processWithAI(query: string, user: User): Promise<AIResponse> {
   console.log('🤖 Processing with AI:', query);
+  console.log('👤 User info:', {
+    name: user.full_name,
+    role: user.role,
+    ghl_user_id: user.ghl_user_id,
+  });
 
   try {
     const systemPrompt = `Eres un asistente experto de Selvadentro Tulum, un desarrollo inmobiliario en Tulum, México.
@@ -55,10 +60,10 @@ CONTACTOS:
 - contacts_update-contact: Actualiza un contacto
 - contacts_upsert-contact: Actualiza o crea un contacto
 - contacts_create-contact: Crea un nuevo contacto
-- contacts_get-contacts: Obtiene todos los contactos
+- contacts_get-contacts: Obtiene todos los contactos (SOPORTA assignedTo para filtrar por broker)
 
 CONVERSACIONES:
-- conversations_search-conversation: Busca/filtra conversaciones
+- conversations_search-conversation: Busca/filtra conversaciones (SOPORTA assignedTo para filtrar por broker)
 - conversations_get-messages: Obtiene mensajes por ID de conversación
 - conversations_send-a-new-message: Envía un mensaje nuevo
 
@@ -67,7 +72,7 @@ UBICACIONES:
 - locations_get-custom-fields: Obtiene campos personalizados
 
 OPORTUNIDADES:
-- opportunities_search-opportunity: Busca oportunidades por criterio
+- opportunities_search-opportunity: Busca oportunidades por criterio (SOPORTA assignedTo para filtrar por broker)
 - opportunities_get-pipelines: Obtiene todos los pipelines
 - opportunities_get-opportunity: Obtiene detalles de una oportunidad
 - opportunities_update-opportunity: Actualiza una oportunidad
@@ -76,16 +81,31 @@ PAGOS:
 - payments_get-order-by-id: Obtiene detalles de orden de pago
 - payments_list-transactions: Lista transacciones paginadas
 
-Datos del usuario:
+Datos del usuario actual:
 - Nombre: ${user.full_name}
 - Rol: ${user.role}
-- GHL ID: ${user.ghl_user_id || 'N/A'}
+- GHL User ID: ${user.ghl_user_id || 'N/A'}
 - Location ID: crN2IhAuOBAl7D8324yI
 
-Cuando el usuario pregunte sobre oportunidades, leads, contactos, ventas, etc., usa las herramientas para obtener datos reales del CRM.
+REGLAS CRÍTICAS DE FILTRADO:
+${user.role === 'user' && user.ghl_user_id ? `
+⚠️ IMPORTANTE: Este usuario es un BROKER con ID "${user.ghl_user_id}".
+SIEMPRE debes incluir el parámetro assignedTo: "${user.ghl_user_id}" cuando uses estas herramientas:
+- contacts_get-contacts
+- conversations_search-conversation
+- opportunities_search-opportunity
 
-Si el usuario es "user" (broker), filtra por assignedTo con su ghl_user_id.
-Si es "admin", muestra datos de todo el equipo.
+Ejemplo correcto:
+{
+  "locationId": "crN2IhAuOBAl7D8324yI",
+  "assignedTo": "${user.ghl_user_id}"
+}
+
+NUNCA omitas assignedTo para usuarios tipo "user" (brokers).
+` : `
+Este usuario es un ADMIN. Puede ver datos de todo el equipo.
+El parámetro assignedTo es opcional para administradores.
+`}
 
 Responde en español de manera clara y profesional. Usa formato markdown cuando sea apropiado.`;
 
@@ -388,9 +408,11 @@ Responde en español de manera clara y profesional. Usa formato markdown cuando 
           const toolInput = toolUse.input;
 
           if (user.role === 'user' && user.ghl_user_id && !toolInput.assignedTo) {
+            console.log(`🔧 Adding assignedTo filter for broker: ${user.ghl_user_id}`);
             toolInput.assignedTo = user.ghl_user_id;
           }
 
+          console.log(`🛠️ Calling tool: ${toolName}`, toolInput);
           const mcpResponse = await callMCPTool(toolName, toolInput, user.role, user.ghl_user_id || undefined);
 
           toolResults.push({
