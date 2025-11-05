@@ -557,16 +557,11 @@ Remember: You have real-time access to business data. Be accurate, fast, insight
         });
 
         const textContent = finalData.content.find((c: any) => c.type === 'text');
-        let cleanResponse = textContent?.text || 'No pude procesar la respuesta';
+        let rawResponse = textContent?.text || 'No pude procesar la respuesta';
 
-        // Remove system tags from response
-        cleanResponse = cleanResponse
-          .replace(/<system_quality_reflection>[\s\S]*?<\/system_quality_reflection>/g, '')
-          .replace(/<system_quality_score>\d+<\/system_quality_score>/g, '')
-          .replace(/<search_quality_reflection>[\s\S]*?<\/search_quality_reflection>/g, '')
-          .replace(/<search_quality_score>\d+<\/search_quality_score>/g, '')
-          .replace(/<result>([\s\S]*?)<\/result>/g, '$1')
-          .trim();
+        // Extract only content between <result></result> tags
+        const resultMatch = rawResponse.match(/<result>([\s\S]*?)<\/result>/);
+        let cleanResponse = resultMatch ? resultMatch[1].trim() : rawResponse;
 
         // Detect if response contains leads/contacts data
         const queryType = detectQueryType(query);
