@@ -1,7 +1,8 @@
 import { User } from './supabase';
 import { callMCPTool } from './ghl-mcp';
 
-const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export interface AIResponse {
   response: string;
@@ -9,17 +10,31 @@ export interface AIResponse {
   toolCalls?: any[];
 }
 
+async function callEdgeFunction(payload: any): Promise<any> {
+  const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/ai-chat`;
+
+  console.log('📡 Calling Edge Function:', edgeFunctionUrl);
+
+  const response = await fetch(edgeFunctionUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Edge Function Error:', response.status, errorText);
+    throw new Error(`Edge Function Error: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
 export async function processWithAI(query: string, user: User): Promise<AIResponse> {
   console.log('🤖 Processing with AI:', query);
-  console.log('🔑 API Key available:', !!ANTHROPIC_API_KEY);
-
-  if (!ANTHROPIC_API_KEY) {
-    console.error('❌ No Anthropic API key found');
-    return {
-      response: 'La API de IA no está configurada. Por favor, configura VITE_ANTHROPIC_API_KEY en el archivo .env',
-      queryType: detectQueryType(query),
-    };
-  }
 
   try {
     const systemPrompt = `Eres un asistente experto de Selvadentro Tulum, un desarrollo inmobiliario en Tulum, México.
@@ -74,306 +89,292 @@ Si es "admin", muestra datos de todo el equipo.
 
 Responde en español de manera clara y profesional. Usa formato markdown cuando sea apropiado.`;
 
-    console.log('📡 Calling Anthropic API...');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+    const tools = [
+      {
+        name: 'calendars_get-calendar-events',
+        description: 'Obtiene eventos del calendario por userId, groupId o calendarId',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string', description: 'ID de la ubicación' },
+            userId: { type: 'string', description: 'ID del usuario' },
+            calendarId: { type: 'string', description: 'ID del calendario' },
+          },
+          required: ['locationId'],
+        },
       },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: query,
+      {
+        name: 'calendars_get-appointment-notes',
+        description: 'Obtiene notas de una cita específica',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            appointmentId: { type: 'string' },
           },
-        ],
-        tools: [
-          {
-            name: 'calendars_get-calendar-events',
-            description: 'Obtiene eventos del calendario por userId, groupId o calendarId',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string', description: 'ID de la ubicación' },
-                userId: { type: 'string', description: 'ID del usuario' },
-                calendarId: { type: 'string', description: 'ID del calendario' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId', 'appointmentId'],
+        },
+      },
+      {
+        name: 'contacts_get-all-tasks',
+        description: 'Obtiene todas las tareas de un contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
           },
-          {
-            name: 'calendars_get-appointment-notes',
-            description: 'Obtiene notas de una cita específica',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                appointmentId: { type: 'string' },
-              },
-              required: ['locationId', 'appointmentId'],
-            },
+          required: ['locationId', 'contactId'],
+        },
+      },
+      {
+        name: 'contacts_add-tags',
+        description: 'Agrega tags a un contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
           },
-          {
-            name: 'contacts_get-all-tasks',
-            description: 'Obtiene todas las tareas de un contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-              },
-              required: ['locationId', 'contactId'],
-            },
+          required: ['locationId', 'contactId', 'tags'],
+        },
+      },
+      {
+        name: 'contacts_remove-tags',
+        description: 'Remueve tags de un contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
           },
-          {
-            name: 'contacts_add-tags',
-            description: 'Agrega tags a un contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-                tags: { type: 'array', items: { type: 'string' } },
-              },
-              required: ['locationId', 'contactId', 'tags'],
-            },
+          required: ['locationId', 'contactId', 'tags'],
+        },
+      },
+      {
+        name: 'contacts_get-contact',
+        description: 'Obtiene detalles de un contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
           },
-          {
-            name: 'contacts_remove-tags',
-            description: 'Remueve tags de un contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-                tags: { type: 'array', items: { type: 'string' } },
-              },
-              required: ['locationId', 'contactId', 'tags'],
-            },
+          required: ['locationId', 'contactId'],
+        },
+      },
+      {
+        name: 'contacts_update-contact',
+        description: 'Actualiza un contacto existente',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            email: { type: 'string' },
+            phone: { type: 'string' },
           },
-          {
-            name: 'contacts_get-contact',
-            description: 'Obtiene detalles de un contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-              },
-              required: ['locationId', 'contactId'],
-            },
+          required: ['locationId', 'contactId'],
+        },
+      },
+      {
+        name: 'contacts_upsert-contact',
+        description: 'Actualiza o crea un contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            phone: { type: 'string' },
           },
-          {
-            name: 'contacts_update-contact',
-            description: 'Actualiza un contacto existente',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-                firstName: { type: 'string' },
-                lastName: { type: 'string' },
-                email: { type: 'string' },
-                phone: { type: 'string' },
-              },
-              required: ['locationId', 'contactId'],
-            },
+          required: ['locationId', 'email'],
+        },
+      },
+      {
+        name: 'contacts_create-contact',
+        description: 'Crea un nuevo contacto',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            email: { type: 'string' },
+            phone: { type: 'string' },
           },
-          {
-            name: 'contacts_upsert-contact',
-            description: 'Actualiza o crea un contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                email: { type: 'string' },
-                firstName: { type: 'string' },
-                lastName: { type: 'string' },
-                phone: { type: 'string' },
-              },
-              required: ['locationId', 'email'],
-            },
+          required: ['locationId', 'firstName', 'email'],
+        },
+      },
+      {
+        name: 'contacts_get-contacts',
+        description: 'Obtiene todos los contactos filtrados',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            query: { type: 'string', description: 'Búsqueda de texto' },
+            assignedTo: { type: 'string' },
           },
-          {
-            name: 'contacts_create-contact',
-            description: 'Crea un nuevo contacto',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                firstName: { type: 'string' },
-                lastName: { type: 'string' },
-                email: { type: 'string' },
-                phone: { type: 'string' },
-              },
-              required: ['locationId', 'firstName', 'email'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'conversations_search-conversation',
+        description: 'Busca/filtra/ordena conversaciones',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            contactId: { type: 'string' },
+            assignedTo: { type: 'string' },
           },
-          {
-            name: 'contacts_get-contacts',
-            description: 'Obtiene todos los contactos filtrados',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                query: { type: 'string', description: 'Búsqueda de texto' },
-                assignedTo: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'conversations_get-messages',
+        description: 'Obtiene mensajes de una conversación',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            conversationId: { type: 'string' },
           },
-          {
-            name: 'conversations_search-conversation',
-            description: 'Busca/filtra/ordena conversaciones',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                contactId: { type: 'string' },
-                assignedTo: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId', 'conversationId'],
+        },
+      },
+      {
+        name: 'conversations_send-a-new-message',
+        description: 'Envía un mensaje a una conversación',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            conversationId: { type: 'string' },
+            message: { type: 'string' },
           },
-          {
-            name: 'conversations_get-messages',
-            description: 'Obtiene mensajes de una conversación',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                conversationId: { type: 'string' },
-              },
-              required: ['locationId', 'conversationId'],
-            },
+          required: ['locationId', 'conversationId', 'message'],
+        },
+      },
+      {
+        name: 'locations_get-location',
+        description: 'Obtiene detalles de una ubicación',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
           },
-          {
-            name: 'conversations_send-a-new-message',
-            description: 'Envía un mensaje a una conversación',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                conversationId: { type: 'string' },
-                message: { type: 'string' },
-              },
-              required: ['locationId', 'conversationId', 'message'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'locations_get-custom-fields',
+        description: 'Obtiene campos personalizados de una ubicación',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
           },
-          {
-            name: 'locations_get-location',
-            description: 'Obtiene detalles de una ubicación',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'opportunities_search-opportunity',
+        description: 'Busca oportunidades por criterio',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            status: { type: 'string', description: 'open, won, lost, abandoned' },
+            assignedTo: { type: 'string' },
+            pipelineId: { type: 'string' },
           },
-          {
-            name: 'locations_get-custom-fields',
-            description: 'Obtiene campos personalizados de una ubicación',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'opportunities_get-pipelines',
+        description: 'Obtiene todos los pipelines de oportunidades',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
           },
-          {
-            name: 'opportunities_search-opportunity',
-            description: 'Busca oportunidades por criterio',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                status: { type: 'string', description: 'open, won, lost, abandoned' },
-                assignedTo: { type: 'string' },
-                pipelineId: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId'],
+        },
+      },
+      {
+        name: 'opportunities_get-opportunity',
+        description: 'Obtiene detalles de una oportunidad específica',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            opportunityId: { type: 'string' },
           },
-          {
-            name: 'opportunities_get-pipelines',
-            description: 'Obtiene todos los pipelines de oportunidades',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-              },
-              required: ['locationId'],
-            },
+          required: ['locationId', 'opportunityId'],
+        },
+      },
+      {
+        name: 'opportunities_update-opportunity',
+        description: 'Actualiza una oportunidad existente',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            opportunityId: { type: 'string' },
+            status: { type: 'string' },
+            monetaryValue: { type: 'number' },
           },
-          {
-            name: 'opportunities_get-opportunity',
-            description: 'Obtiene detalles de una oportunidad específica',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                opportunityId: { type: 'string' },
-              },
-              required: ['locationId', 'opportunityId'],
-            },
+          required: ['locationId', 'opportunityId'],
+        },
+      },
+      {
+        name: 'payments_get-order-by-id',
+        description: 'Obtiene detalles de una orden de pago',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            orderId: { type: 'string' },
           },
-          {
-            name: 'opportunities_update-opportunity',
-            description: 'Actualiza una oportunidad existente',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                opportunityId: { type: 'string' },
-                status: { type: 'string' },
-                monetaryValue: { type: 'number' },
-              },
-              required: ['locationId', 'opportunityId'],
-            },
+          required: ['locationId', 'orderId'],
+        },
+      },
+      {
+        name: 'payments_list-transactions',
+        description: 'Lista transacciones con paginación',
+        input_schema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string' },
+            limit: { type: 'number', description: 'Límite de resultados' },
+            offset: { type: 'number', description: 'Offset para paginación' },
           },
-          {
-            name: 'payments_get-order-by-id',
-            description: 'Obtiene detalles de una orden de pago',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                orderId: { type: 'string' },
-              },
-              required: ['locationId', 'orderId'],
-            },
-          },
-          {
-            name: 'payments_list-transactions',
-            description: 'Lista transacciones con paginación',
-            input_schema: {
-              type: 'object',
-              properties: {
-                locationId: { type: 'string' },
-                limit: { type: 'number', description: 'Límite de resultados' },
-                offset: { type: 'number', description: 'Offset para paginación' },
-              },
-              required: ['locationId'],
-            },
-          },
-        ],
-      }),
+          required: ['locationId'],
+        },
+      },
+    ];
+
+    const aiResponse = await callEdgeFunction({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: query,
+        },
+      ],
+      tools,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Anthropic API Error:', response.status, errorText);
-      throw new Error(`API Error: ${response.status} - ${errorText}`);
-    }
-
-    const aiResponse = await response.json();
     console.log('✅ AI Response received:', aiResponse);
 
     if (aiResponse.content && aiResponse.content.length > 0) {
@@ -399,35 +400,26 @@ Responde en español de manera clara y profesional. Usa formato markdown cuando 
           });
         }
 
-        const finalResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 2048,
-            system: systemPrompt,
-            messages: [
-              {
-                role: 'user',
-                content: query,
-              },
-              {
-                role: 'assistant',
-                content: aiResponse.content,
-              },
-              {
-                role: 'user',
-                content: toolResults,
-              },
-            ],
-          }),
+        const finalData = await callEdgeFunction({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: query,
+            },
+            {
+              role: 'assistant',
+              content: aiResponse.content,
+            },
+            {
+              role: 'user',
+              content: toolResults,
+            },
+          ],
         });
 
-        const finalData = await finalResponse.json();
         const textContent = finalData.content.find((c: any) => c.type === 'text');
 
         return {
