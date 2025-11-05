@@ -515,14 +515,26 @@ Remember: You have real-time access to business data. Be accurate, fast, insight
           console.log(`🛠️ Calling tool: ${toolName}`, toolInput);
           const mcpResponse = await callMCPTool(toolName, toolInput, user.role, user.ghl_user_id || undefined);
 
+          const responseData = mcpResponse?.data || {};
+          console.log(`📦 Tool response data:`, responseData);
+
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
-            content: JSON.stringify(mcpResponse.data),
+            content: JSON.stringify(responseData),
           });
         }
 
-        const rawData = toolResults[0] ? JSON.parse(toolResults[0].content) : null;
+        let rawData = null;
+        try {
+          if (toolResults[0]?.content) {
+            const content = toolResults[0].content;
+            rawData = typeof content === 'string' ? JSON.parse(content) : content;
+          }
+        } catch (parseError) {
+          console.warn('⚠️ Could not parse tool result:', parseError);
+          rawData = null;
+        }
 
         const finalData = await callEdgeFunction({
           model: 'claude-3-5-sonnet-20240620',
