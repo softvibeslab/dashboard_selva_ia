@@ -36,13 +36,19 @@ Deno.serve(async (req: Request) => {
 
     const { messages, system, tools, model, max_tokens = 4096 } = await req.json();
 
-    const modelToUse = model || 'claude-3-5-sonnet-20240620';
+    // Try different models in order of preference
+    const modelsToTry = [
+      model || 'claude-3-5-sonnet-20241022',
+      'claude-3-5-sonnet-20240620',
+      'claude-3-opus-20240229',
+      'claude-3-sonnet-20240229',
+      'claude-3-haiku-20240307',
+    ];
 
     console.log('🤖 Processing AI request with', messages?.length || 0, 'messages');
-    console.log('📦 Using model:', modelToUse);
 
     const payload = {
-      model: modelToUse,
+      model: modelsToTry[0],
       max_tokens,
       system,
       messages,
@@ -51,46 +57,42 @@ Deno.serve(async (req: Request) => {
 
     let response: Response | null = null;
     let lastError: string = '';
+    let workingModel: string = '';
 
-    // Try primary API key first
-    if (ANTHROPIC_API_KEY) {
-      console.log('🔑 Trying primary API key...');
-      response = await callAnthropicAPI(ANTHROPIC_API_KEY, payload);
-      
-      if (response.ok) {
-        console.log('✅ Primary API key worked');
-      } else {
-        const errorText = await response.text();
-        lastError = errorText;
-        console.log('⚠️ Primary API key failed:', response.status, errorText);
+    // Try alternative API key first since primary seems to have issues
+    const keysToTry = [
+      { key: ANTHROPIC_API_KEY_ALTERNATIVE, name: 'alternative' },
+      { key: ANTHROPIC_API_KEY, name: 'primary' },
+    ].filter(k => k.key);
+
+    for (const { key, name } of keysToTry) {
+      for (const modelName of modelsToTry) {
+        console.log(`🔑 Trying ${name} API key with model: ${modelName}`);
+        payload.model = modelName;
         
-        // Check if it's a credit issue or model not found
-        if (errorText.includes('credit balance') || errorText.includes('not_found_error') || response.status === 400 || response.status === 429) {
-          console.log('💳 Issue detected, trying alternative key...');
+        response = await callAnthropicAPI(key!, payload);
+        
+        if (response.ok) {
+          console.log(`✅ Success with ${name} API key and model: ${modelName}`);
+          workingModel = modelName;
+          break;
+        } else {
+          const errorText = await response.text();
+          lastError = errorText;
+          console.log(`⚠️ ${name} key + ${modelName} failed:`, response.status, errorText);
           response = null;
         }
       }
-    }
-
-    // Fallback to alternative API key if primary failed or not available
-    if (!response && ANTHROPIC_API_KEY_ALTERNATIVE) {
-      console.log('🔄 Using alternative API key...');
-      response = await callAnthropicAPI(ANTHROPIC_API_KEY_ALTERNATIVE, payload);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Alternative API key also failed:', response.status, errorText);
-        throw new Error(`Both API keys failed. Last error: ${errorText}`);
-      }
-      console.log('✅ Alternative API key worked');
+      if (response) break;
     }
 
     if (!response) {
-      throw new Error(`API call failed: ${lastError}`);
+      throw new Error(`All API keys and models failed. Last error: ${lastError}`);
     }
 
     const data = await response.json();
-    console.log('✅ AI Response received');
+    console.log(`✅ AI Response received using model: ${workingModel}`);
 
     return new Response(
       JSON.stringify(data),
