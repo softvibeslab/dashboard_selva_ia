@@ -13,55 +13,36 @@ export async function fetchMetrics(user: User): Promise<Metrics> {
     const isAdmin = user.role === 'admin';
     const ghlUserId = user.ghl_user_id;
 
-    const contactsPromise = callMCPTool(
+    const contactsParams = isAdmin ? {} : { assignedTo: ghlUserId };
+    const contactsResponse = await callMCPTool(
       'contacts_get-contacts',
-      isAdmin ? {} : { assignedTo: ghlUserId },
+      contactsParams,
       user.role,
       ghlUserId
     );
-
-    const opportunitiesPromise = callMCPTool(
-      'opportunities_get-pipelines',
-      {},
-      user.role,
-      ghlUserId
-    );
-
-    const [contactsResponse, opportunitiesResponse] = await Promise.all([
-      contactsPromise,
-      opportunitiesPromise,
-    ]);
 
     const contacts = contactsResponse.data?.contacts || [];
-    const pipelines = opportunitiesResponse.data?.pipelines || [];
-
-    let opportunities = 0;
-    let revenue = 0;
-
-    for (const pipeline of pipelines) {
-      const pipelineOpps = await callMCPTool(
-        'opportunities_get-opportunities',
-        { pipelineId: pipeline.id },
-        user.role,
-        ghlUserId
-      );
-
-      const opps = pipelineOpps.data?.opportunities || [];
-
-      const filteredOpps = isAdmin
-        ? opps
-        : opps.filter((opp: any) => opp.assignedTo === ghlUserId);
-
-      opportunities += filteredOpps.length;
-
-      for (const opp of filteredOpps) {
-        if (opp.monetaryValue) {
-          revenue += parseFloat(opp.monetaryValue);
-        }
-      }
-    }
-
     const leads = contacts.length;
+
+    const opportunitiesParams = isAdmin ? {} : { assignedTo: ghlUserId };
+    const opportunitiesResponse = await callMCPTool(
+      'opportunities_search-opportunity',
+      opportunitiesParams,
+      user.role,
+      ghlUserId
+    );
+
+    const allOpportunities = opportunitiesResponse.data?.opportunities || [];
+
+    const wonOpportunities = allOpportunities.filter((opp: any) => opp.status === 'won');
+
+    const revenue = wonOpportunities.reduce((sum: number, opp: any) => {
+      const value = parseFloat(opp.monetaryValue || 0);
+      return sum + value;
+    }, 0);
+
+    const opportunities = allOpportunities.length;
+
     const conversion = leads > 0 ? Math.round((opportunities / leads) * 100) : 0;
 
     return {
