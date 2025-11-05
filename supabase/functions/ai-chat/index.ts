@@ -36,8 +36,7 @@ Deno.serve(async (req: Request) => {
 
     const { messages, system, tools, model, max_tokens = 4096 } = await req.json();
 
-    // Use claude-3-sonnet-20240229 - this is a stable, widely available model
-    const modelToUse = model || 'claude-3-sonnet-20240229';
+    const modelToUse = model || 'claude-3-5-sonnet-20240620';
 
     console.log('🤖 Processing AI request with', messages?.length || 0, 'messages');
     console.log('📦 Using model:', modelToUse);
