@@ -8,6 +8,8 @@ export interface AIResponse {
   response: string;
   queryType: string;
   toolCalls?: any[];
+  structuredData?: any;
+  rawData?: any;
 }
 
 async function callEdgeFunction(payload: any): Promise<any> {
@@ -520,6 +522,8 @@ Remember: You have real-time access to business data. Be accurate, fast, insight
           });
         }
 
+        const rawData = toolResults[0] ? JSON.parse(toolResults[0].content) : null;
+
         const finalData = await callEdgeFunction({
           model: 'claude-3-5-sonnet-20240620',
           max_tokens: 4096,
@@ -541,11 +545,33 @@ Remember: You have real-time access to business data. Be accurate, fast, insight
         });
 
         const textContent = finalData.content.find((c: any) => c.type === 'text');
+        let cleanResponse = textContent?.text || 'No pude procesar la respuesta';
+
+        // Remove system tags from response
+        cleanResponse = cleanResponse
+          .replace(/<system_quality_reflection>[\s\S]*?<\/system_quality_reflection>/g, '')
+          .replace(/<system_quality_score>\d+<\/system_quality_score>/g, '')
+          .replace(/<result>([\s\S]*?)<\/result>/g, '$1')
+          .trim();
+
+        // Detect if response contains leads/contacts data
+        const queryType = detectQueryType(query);
+        let structuredData = null;
+
+        if ((queryType === 'leads' || queryType === 'oportunidades') && rawData) {
+          if (Array.isArray(rawData.contacts)) {
+            structuredData = { type: 'leads', data: rawData.contacts };
+          } else if (Array.isArray(rawData.opportunities)) {
+            structuredData = { type: 'opportunities', data: rawData.opportunities };
+          }
+        }
 
         return {
-          response: textContent?.text || 'No pude procesar la respuesta',
-          queryType: detectQueryType(query),
+          response: cleanResponse,
+          queryType,
           toolCalls: toolUses,
+          structuredData,
+          rawData,
         };
       }
 

@@ -3,12 +3,14 @@ import { Send, Loader2, Sparkles } from 'lucide-react';
 import { User, supabase } from '../lib/supabase';
 import { processQuery } from '../lib/ai-processor';
 import { processWithAI } from '../lib/ai-service';
+import { LeadCard } from './LeadCard';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  structuredData?: any;
 }
 
 interface ChatInterfaceProps {
@@ -56,11 +58,13 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
 
       let response: string;
       let queryType: string;
+      let structuredData: any = undefined;
 
       if (hasAnthropicKey) {
         const aiResult = await processWithAI(input, user);
         response = aiResult.response;
         queryType = aiResult.queryType;
+        structuredData = aiResult.structuredData;
       } else {
         const result = await processQuery(input, user);
         response = result.response;
@@ -72,6 +76,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
         role: 'assistant',
         content: response,
         timestamp: new Date(),
+        structuredData,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -121,6 +126,22 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 {message.timestamp.toLocaleTimeString()}
               </p>
             </div>
+          </div>
+        ))}
+
+        {/* Render Lead Cards if structured data exists */}
+        {messages.filter(m => m.role === 'assistant' && m.structuredData).map((message) => (
+          <div key={`${message.id}-cards`} className="space-y-3">
+            {message.structuredData?.type === 'leads' && message.structuredData?.data?.map((lead: any, idx: number) => (
+              <LeadCard
+                key={`${message.id}-lead-${idx}`}
+                lead={lead}
+                onGenerateScript={(lead) => {
+                  const scriptQuery = `Genera un script de ventas personalizado para ${lead.name || lead.firstName} basándote en sus datos y conversaciones`;
+                  setInput(scriptQuery);
+                }}
+              />
+            ))}
           </div>
         ))}
         {loading && (
