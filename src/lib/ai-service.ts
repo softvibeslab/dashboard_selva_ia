@@ -563,6 +563,8 @@ Remember: You have real-time access to business data. Be accurate, fast, insight
         cleanResponse = cleanResponse
           .replace(/<system_quality_reflection>[\s\S]*?<\/system_quality_reflection>/g, '')
           .replace(/<system_quality_score>\d+<\/system_quality_score>/g, '')
+          .replace(/<search_quality_reflection>[\s\S]*?<\/search_quality_reflection>/g, '')
+          .replace(/<search_quality_score>\d+<\/search_quality_score>/g, '')
           .replace(/<result>([\s\S]*?)<\/result>/g, '$1')
           .trim();
 
