@@ -106,14 +106,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             <div
               className={`max-w-3xl rounded-2xl p-4 ${
                 message.role === 'user'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
-                  : 'bg-white/10 backdrop-blur-lg border border-white/20 text-white'
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-700 text-white'
+                  : 'bg-stone-800/60 backdrop-blur-lg border border-stone-700/50 text-stone-50'
               }`}
             >
               {message.role === 'assistant' && (
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs text-emerald-400 font-semibold">AI Assistant</span>
+                  <Sparkles className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs text-emerald-500 font-semibold">AI Assistant</span>
                 </div>
               )}
               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -125,15 +125,15 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-4">
-              <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+            <div className="bg-stone-800/60 backdrop-blur-lg border border-stone-700/50 rounded-2xl p-4">
+              <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-4">
+      <form onSubmit={handleSubmit} className="bg-stone-800/40 backdrop-blur-lg border border-stone-700/50 rounded-2xl p-4">
         <div className="flex gap-3">
           <input
             type="text"
@@ -141,12 +141,12 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Pregunta sobre ventas, leads, oportunidades..."
             disabled={loading}
-            className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
+            className="flex-1 bg-stone-800/60 border border-stone-700/50 rounded-xl px-4 py-3 text-stone-50 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
+            className="bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
           >
             <Send className="w-5 h-5" />
           </button>

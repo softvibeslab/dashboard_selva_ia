@@ -24,10 +24,10 @@ export function MetricsWidget({ user }: MetricsWidgetProps) {
   }, [user]);
 
   const cards = [
-    { icon: Users, label: 'Leads', value: metrics.leads, color: 'from-blue-500 to-cyan-500' },
-    { icon: Target, label: 'Oportunidades', value: metrics.opportunities, color: 'from-emerald-500 to-teal-500' },
-    { icon: DollarSign, label: 'Revenue', value: `$${(metrics.revenue / 1000000).toFixed(1)}M`, color: 'from-amber-500 to-orange-500' },
-    { icon: TrendingUp, label: 'Conversión', value: `${metrics.conversion}%`, color: 'from-pink-500 to-rose-500' },
+    { icon: Users, label: 'Leads', value: metrics.leads, color: 'from-emerald-600 to-green-700' },
+    { icon: Target, label: 'Oportunidades', value: metrics.opportunities, color: 'from-green-600 to-emerald-700' },
+    { icon: DollarSign, label: 'Revenue', value: `$${(metrics.revenue / 1000000).toFixed(1)}M`, color: 'from-orange-600 to-red-600' },
+    { icon: TrendingUp, label: 'Conversión', value: `${metrics.conversion}%`, color: 'from-amber-600 to-orange-600' },
   ];
 
   return (
@@ -37,15 +37,15 @@ export function MetricsWidget({ user }: MetricsWidgetProps) {
         return (
           <div
             key={card.label}
-            className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-3 min-w-[100px]"
+            className="bg-stone-800/60 backdrop-blur-lg border border-stone-700/50 rounded-xl p-3 min-w-[100px]"
           >
             <div className="flex items-center gap-2 mb-1">
               <div className={`w-8 h-8 bg-gradient-to-br ${card.color} rounded-lg flex items-center justify-center`}>
                 <Icon className="w-4 h-4 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-white">{card.value}</p>
-            <p className="text-xs text-blue-200">{card.label}</p>
+            <p className="text-2xl font-bold text-stone-50">{card.value}</p>
+            <p className="text-xs text-stone-400">{card.label}</p>
           </div>
         );
       })}
