@@ -34,12 +34,16 @@ Deno.serve(async (req: Request) => {
       throw new Error('No API keys configured');
     }
 
-    const { messages, system, tools, model = 'claude-3-5-sonnet-20241022', max_tokens = 2048 } = await req.json();
+    const { messages, system, tools, model, max_tokens = 4096 } = await req.json();
+
+    // Use claude-3-5-sonnet-20241022 if available, otherwise fallback to claude-3-5-sonnet-20240620
+    const modelToUse = model || 'claude-3-5-sonnet-20240620';
 
     console.log('🤖 Processing AI request with', messages?.length || 0, 'messages');
+    console.log('📦 Using model:', modelToUse);
 
     const payload = {
-      model,
+      model: modelToUse,
       max_tokens,
       system,
       messages,
@@ -61,9 +65,9 @@ Deno.serve(async (req: Request) => {
         lastError = errorText;
         console.log('⚠️ Primary API key failed:', response.status, errorText);
         
-        // Check if it's a credit issue
-        if (errorText.includes('credit balance') || response.status === 400) {
-          console.log('💳 Credit issue detected, trying alternative key...');
+        // Check if it's a credit issue or model not found
+        if (errorText.includes('credit balance') || errorText.includes('not_found_error') || response.status === 400) {
+          console.log('💳 Issue detected, trying alternative key...');
           response = null;
         }
       }
