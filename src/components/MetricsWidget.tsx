@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Target, Loader2 } from 'lucide-react';
 import { User } from '../lib/supabase';
+import { fetchMetrics, Metrics } from '../lib/metrics-service';
 
 interface MetricsWidgetProps {
   user: User;
 }
 
 export function MetricsWidget({ user }: MetricsWidgetProps) {
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = useState<Metrics>({
     leads: 0,
     opportunities: 0,
     revenue: 0,
     conversion: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMetrics({
-      leads: user.role === 'admin' ? 156 : 47,
-      opportunities: user.role === 'admin' ? 89 : 28,
-      revenue: user.role === 'admin' ? 12500000 : 600000,
-      conversion: user.role === 'admin' ? 32 : 28,
-    });
+    async function loadMetrics() {
+      setLoading(true);
+      const data = await fetchMetrics(user);
+      setMetrics(data);
+      setLoading(false);
+    }
+    loadMetrics();
   }, [user]);
 
   const cards = [
@@ -29,6 +32,21 @@ export function MetricsWidget({ user }: MetricsWidgetProps) {
     { icon: DollarSign, label: 'Revenue', value: `$${(metrics.revenue / 1000000).toFixed(1)}M`, color: 'from-orange-600 to-red-600' },
     { icon: TrendingUp, label: 'Conversión', value: `${metrics.conversion}%`, color: 'from-amber-600 to-orange-600' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="bg-stone-800/60 backdrop-blur-lg border border-stone-700/50 rounded-xl p-3 min-w-[100px] flex items-center justify-center"
+          >
+            <Loader2 className="w-5 h-5 text-stone-400 animate-spin" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-3">
