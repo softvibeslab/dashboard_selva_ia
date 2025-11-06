@@ -1,4 +1,4 @@
-const MCP_ENDPOINT = 'https://services.leadconnectorhq.com/mcp/';
+const GHL_BASE_URL = 'https://services.leadconnectorhq.com';
 const GHL_TOKEN = 'pit-84d7687f-d43f-4434-9804-c671c669dd0f';
 const LOCATION_ID = 'crN2IhAuOBAl7D8324yI';
 
@@ -15,39 +15,72 @@ export interface MCPResponse {
 
 export async function callMCPTool(tool: string, input: Record<string, any>, userRole: string, userId?: string): Promise<MCPResponse> {
   try {
-    const filteredInput = { ...input };
+    let endpoint = '';
+    let method = 'GET';
+    const queryParams = new URLSearchParams();
 
-    if (userRole === 'user' && userId) {
-      filteredInput.assignedTo = userId;
+    queryParams.append('locationId', LOCATION_ID);
+
+    if (tool === 'contacts_get-contacts') {
+      endpoint = '/contacts/';
+      if (input.assignedTo) {
+        queryParams.append('assignedTo', input.assignedTo);
+      }
+    } else if (tool === 'opportunities_search-opportunity') {
+      endpoint = '/opportunities/search';
+      method = 'POST';
+    } else {
+      return {
+        success: false,
+        error: `Unknown tool: ${tool}`,
+      };
     }
 
-    const response = await fetch(MCP_ENDPOINT, {
-      method: 'POST',
+    const url = `${GHL_BASE_URL}${endpoint}?${queryParams.toString()}`;
+
+    console.log('🔗 Calling GHL API:', { method, url, tool, input });
+
+    const fetchOptions: RequestInit = {
+      method,
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${GHL_TOKEN}`,
-        'locationId': LOCATION_ID,
+        'Version': '2021-07-28',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        tool,
-        input: filteredInput,
-      }),
-    });
+    };
+
+    if (method === 'POST' && tool === 'opportunities_search-opportunity') {
+      const body: any = {
+        location_id: LOCATION_ID,
+      };
+
+      if (input.assignedTo) {
+        body.assigned_to = input.assignedTo;
+      }
+
+      fetchOptions.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ GHL API Error:', response.status, errorText);
       return {
         success: false,
-        error: `MCP Error: ${response.status} - ${errorText}`,
+        error: `GHL API Error: ${response.status} - ${errorText}`,
       };
     }
 
     const data = await response.json();
+    console.log('✅ GHL API Response:', data);
+
     return {
       success: true,
       data,
     };
   } catch (error) {
+    console.error('❌ Exception calling GHL:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
