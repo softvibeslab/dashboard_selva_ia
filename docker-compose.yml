@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: selvadentro-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.selvadentro.app=dashboard"
+      - "com.selvadentro.version=1.0.0"
+    networks:
+      - selvadentro-network
+
+networks:
+  selvadentro-network:
+    driver: bridge
