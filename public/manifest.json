@@ -1,0 +1,71 @@
+{
+  "name": "Selvadentro Dashboard IA",
+  "short_name": "Selvadentro IA",
+  "description": "Dashboard inteligente con AI para gestión de CRM y ventas - Selvadentro Tulum",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1917",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/selva.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/selva.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Vista ejecutiva del dashboard",
+      "url": "/?view=executive",
+      "icons": [
+        {
+          "src": "/selva.jpg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Chat IA",
+      "short_name": "Chat",
+      "description": "Chatear con la IA",
+      "url": "/?view=chat",
+      "icons": [
+        {
+          "src": "/selva.jpg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Pipeline",
+      "short_name": "Pipeline",
+      "description": "Ver pipeline de ventas",
+      "url": "/?view=pipeline",
+      "icons": [
+        {
+          "src": "/selva.jpg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/selva.jpg",
+      "sizes": "540x720",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    }
+  ]
+}

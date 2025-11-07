@@ -8,6 +8,8 @@ import { ExecutiveDashboard } from './ExecutiveDashboard';
 import { PipelineView } from './PipelineView';
 import { ContactsView } from './ContactsView';
 import { AutomationsView } from './AutomationsView';
+import { ReportsView } from './ReportsView';
+import { OfflineIndicator } from './OfflineIndicator';
 import { User } from '../lib/supabase';
 
 interface DashboardProps {
@@ -16,7 +18,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [activeView, setActiveView] = useState<'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations'>('executive');
+  const [activeView, setActiveView] = useState<'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations' | 'reports'>('executive');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-900 via-neutral-800 to-stone-900">
@@ -51,9 +53,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             {activeView === 'pipeline' && <PipelineView user={user} />}
             {activeView === 'contacts' && <ContactsView user={user} />}
             {activeView === 'automations' && <AutomationsView user={user} />}
+            {activeView === 'reports' && <ReportsView user={user} />}
           </main>
         </div>
       </div>
+
+      {/* PWA Offline Indicator & Install Prompt */}
+      <OfflineIndicator />
     </div>
   );
 }

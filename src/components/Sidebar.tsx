@@ -8,14 +8,15 @@ import {
   LayoutDashboard,
   GitBranch,
   Users,
-  Zap
+  Zap,
+  FileText
 } from 'lucide-react';
 import { User } from '../lib/supabase';
 
 interface SidebarProps {
   user: User;
-  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations';
-  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations') => void;
+  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations' | 'reports';
+  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations' | 'reports') => void;
   onLogout: () => void;
 }
 
@@ -25,6 +26,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout }: SidebarPro
     { id: 'pipeline' as const, icon: GitBranch, label: 'Pipeline' },
     { id: 'contacts' as const, icon: Users, label: 'Contactos 360°', badge: 'NEW' },
     { id: 'automations' as const, icon: Zap, label: 'Automatizaciones', badge: 'NEW' },
+    { id: 'reports' as const, icon: FileText, label: 'Reportes', badge: 'NEW' },
     { id: 'chat' as const, icon: MessageSquare, label: 'Chat IA' },
     { id: 'history' as const, icon: History, label: 'Historial' },
     { id: 'graphics' as const, icon: BarChart3, label: 'Gráficos' },
