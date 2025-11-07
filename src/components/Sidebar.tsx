@@ -1,16 +1,27 @@
-import { MessageSquare, History, BarChart3, LogOut, Shield, User as UserIcon } from 'lucide-react';
+import {
+  MessageSquare,
+  History,
+  BarChart3,
+  LogOut,
+  Shield,
+  User as UserIcon,
+  LayoutDashboard,
+  GitBranch
+} from 'lucide-react';
 import { User } from '../lib/supabase';
 
 interface SidebarProps {
   user: User;
-  activeView: 'chat' | 'history' | 'graphics';
-  onViewChange: (view: 'chat' | 'history' | 'graphics') => void;
+  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline';
+  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline') => void;
   onLogout: () => void;
 }
 
 export function Sidebar({ user, activeView, onViewChange, onLogout }: SidebarProps) {
   const menuItems = [
-    { id: 'chat' as const, icon: MessageSquare, label: 'Chat Query' },
+    { id: 'executive' as const, icon: LayoutDashboard, label: 'Dashboard', badge: 'NEW' },
+    { id: 'pipeline' as const, icon: GitBranch, label: 'Pipeline', badge: 'NEW' },
+    { id: 'chat' as const, icon: MessageSquare, label: 'Chat IA' },
     { id: 'history' as const, icon: History, label: 'Historial' },
     { id: 'graphics' as const, icon: BarChart3, label: 'Gráficos' },
   ];
@@ -80,7 +91,12 @@ export function Sidebar({ user, activeView, onViewChange, onLogout }: SidebarPro
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium flex-1 text-left">{item.label}</span>
+                  {item.badge && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               </li>
             );
