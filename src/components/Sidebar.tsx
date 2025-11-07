@@ -7,14 +7,15 @@ import {
   User as UserIcon,
   LayoutDashboard,
   GitBranch,
-  Users
+  Users,
+  Zap
 } from 'lucide-react';
 import { User } from '../lib/supabase';
 
 interface SidebarProps {
   user: User;
-  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts';
-  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts') => void;
+  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations';
+  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations') => void;
   onLogout: () => void;
 }
 
@@ -23,6 +24,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout }: SidebarPro
     { id: 'executive' as const, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'pipeline' as const, icon: GitBranch, label: 'Pipeline' },
     { id: 'contacts' as const, icon: Users, label: 'Contactos 360°', badge: 'NEW' },
+    { id: 'automations' as const, icon: Zap, label: 'Automatizaciones', badge: 'NEW' },
     { id: 'chat' as const, icon: MessageSquare, label: 'Chat IA' },
     { id: 'history' as const, icon: History, label: 'Historial' },
     { id: 'graphics' as const, icon: BarChart3, label: 'Gráficos' },

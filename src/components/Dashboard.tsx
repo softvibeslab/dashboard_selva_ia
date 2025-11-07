@@ -7,6 +7,7 @@ import { GraphicsView } from './GraphicsView';
 import { ExecutiveDashboard } from './ExecutiveDashboard';
 import { PipelineView } from './PipelineView';
 import { ContactsView } from './ContactsView';
+import { AutomationsView } from './AutomationsView';
 import { User } from '../lib/supabase';
 
 interface DashboardProps {
@@ -15,7 +16,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [activeView, setActiveView] = useState<'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts'>('executive');
+  const [activeView, setActiveView] = useState<'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts' | 'automations'>('executive');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-900 via-neutral-800 to-stone-900">
@@ -49,6 +50,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             {activeView === 'executive' && <ExecutiveDashboard user={user} />}
             {activeView === 'pipeline' && <PipelineView user={user} />}
             {activeView === 'contacts' && <ContactsView user={user} />}
+            {activeView === 'automations' && <AutomationsView user={user} />}
           </main>
         </div>
       </div>
