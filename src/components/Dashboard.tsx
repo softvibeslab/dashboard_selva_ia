@@ -42,7 +42,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           </header>
 
           <main className="flex-1 overflow-hidden">
-            {activeView === 'chat' && <ChatInterface user={user} />}
+            {activeView === 'chat' && <ChatInterface user={user} onNavigate={setActiveView} />}
             {activeView === 'history' && <HistoryView user={user} />}
             {activeView === 'graphics' && <GraphicsView user={user} />}
             {activeView === 'executive' && <ExecutiveDashboard user={user} />}
