@@ -6,21 +6,23 @@ import {
   Shield,
   User as UserIcon,
   LayoutDashboard,
-  GitBranch
+  GitBranch,
+  Users
 } from 'lucide-react';
 import { User } from '../lib/supabase';
 
 interface SidebarProps {
   user: User;
-  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline';
-  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline') => void;
+  activeView: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts';
+  onViewChange: (view: 'chat' | 'history' | 'graphics' | 'executive' | 'pipeline' | 'contacts') => void;
   onLogout: () => void;
 }
 
 export function Sidebar({ user, activeView, onViewChange, onLogout }: SidebarProps) {
   const menuItems = [
-    { id: 'executive' as const, icon: LayoutDashboard, label: 'Dashboard', badge: 'NEW' },
-    { id: 'pipeline' as const, icon: GitBranch, label: 'Pipeline', badge: 'NEW' },
+    { id: 'executive' as const, icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'pipeline' as const, icon: GitBranch, label: 'Pipeline' },
+    { id: 'contacts' as const, icon: Users, label: 'Contactos 360°', badge: 'NEW' },
     { id: 'chat' as const, icon: MessageSquare, label: 'Chat IA' },
     { id: 'history' as const, icon: History, label: 'Historial' },
     { id: 'graphics' as const, icon: BarChart3, label: 'Gráficos' },
