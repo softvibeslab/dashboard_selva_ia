@@ -1,5 +1,30 @@
 import { User } from './supabase';
-import { SELVADENTRO_KNOWLEDGE } from './ghl-mcp';
+
+const SELVADENTRO_KNOWLEDGE = {
+  name: 'Selvadentro Tulum',
+  description: 'Desarrollo residencial eco-friendly en Tulum, México',
+  features: [
+    'Lotes residenciales integrados con selva primaria',
+    '9 cenotes naturales dentro del desarrollo',
+    'Áreas de wellness y bienestar',
+    'Jungle bars temáticos',
+    'Gimnasios equipados',
+    'Áreas para mascotas',
+    'Canchas deportivas',
+    'Seguridad 24/7',
+  ],
+  location: 'Tulum, Quintana Roo, México',
+  priceRange: {
+    min: 300000,
+    max: 2000000,
+    currency: 'MXN'
+  },
+  investment: {
+    averageROI: '18% anual',
+    appreciation: '+12% anual',
+    rentalYield: '8-12% cap rate'
+  }
+};
 
 export interface QueryResult {
   response: string;

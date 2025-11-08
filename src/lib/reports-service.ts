@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool } from './ghl-mcp';
+import { getContacts, getOpportunities } from './ghl-api';
 import { fetchRealMetrics } from './metrics-service';
 
 // ==================== TYPES ====================
@@ -210,26 +210,18 @@ async function fetchMetricsData(user: User) {
 
 async function fetchPipelineData(user: User) {
   try {
-    const params: Record<string, unknown> = {
-      location_id: user.location_id,
-      limit: 100,
-    };
+    const userId = user.ghl_user_id || undefined;
+    const isAdmin = user.role === 'admin';
 
-    if (user.role === 'broker' && user.user_id) {
-      params.assignedTo = user.user_id;
-    }
+    const response = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
+    );
 
-    const response = await callMCPTool('opportunities_search-opportunity', params);
-
-    if (!response || typeof response !== 'object') {
+    if (!response.success || !response.data?.opportunities) {
       return [];
     }
 
-    const opportunities = Array.isArray(response)
-      ? response
-      : 'opportunities' in response && Array.isArray(response.opportunities)
-      ? response.opportunities
-      : [];
+    const opportunities = response.data.opportunities;
 
     // Group by pipeline stage
     const stageMap = new Map<string, { count: number; value: number }>();
@@ -283,26 +275,18 @@ async function fetchRecentActivities(user: User) {
 
 async function fetchTopDeals(user: User) {
   try {
-    const params: Record<string, unknown> = {
-      location_id: user.location_id,
-      limit: 10,
-    };
+    const userId = user.ghl_user_id || undefined;
+    const isAdmin = user.role === 'admin';
 
-    if (user.role === 'broker' && user.user_id) {
-      params.assignedTo = user.user_id;
-    }
+    const response = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
+    );
 
-    const response = await callMCPTool('opportunities_search-opportunity', params);
-
-    if (!response || typeof response !== 'object') {
+    if (!response.success || !response.data?.opportunities) {
       return [];
     }
 
-    const opportunities = Array.isArray(response)
-      ? response
-      : 'opportunities' in response && Array.isArray(response.opportunities)
-      ? response.opportunities
-      : [];
+    const opportunities = response.data.opportunities;
 
     // Sort by value and take top 5
     return opportunities
@@ -323,20 +307,18 @@ async function fetchTopDeals(user: User) {
 
 async function fetchContactStats(user: User) {
   try {
-    const params: Record<string, unknown> = {
-      locationId: user.location_id,
-      limit: 1000,
-    };
+    const userId = user.ghl_user_id || undefined;
+    const isAdmin = user.role === 'admin';
 
-    const response = await callMCPTool('contacts_get-contacts', params);
+    const response = await getContacts(
+      isAdmin || !userId ? {} : { assignedTo: userId }
+    );
 
-    if (!response || typeof response !== 'object') {
+    if (!response.success || !response.data?.contacts) {
       return { total: 0, active: 0, newThisWeek: 0 };
     }
 
-    const contacts = 'contacts' in response && Array.isArray(response.contacts)
-      ? response.contacts
-      : [];
+    const contacts = response.data.contacts;
 
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 

@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool } from './ghl-mcp';
+import { getContacts, getOpportunities } from './ghl-api';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -407,18 +407,30 @@ Responde en español de manera clara y profesional. Usa formato markdown cuando 
           const toolName = toolUse.name;
           const toolInput = toolUse.input;
 
-          if (user.role === 'user' && user.ghl_user_id && !toolInput.assignedTo) {
-            console.log(`🔧 Adding assignedTo filter for broker: ${user.ghl_user_id}`);
-            toolInput.assignedTo = user.ghl_user_id;
-          }
-
           console.log(`🛠️ Calling tool: ${toolName}`, toolInput);
-          const mcpResponse = await callMCPTool(toolName, toolInput, user.role, user.ghl_user_id || undefined);
+
+          // Call REST API based on tool name
+          let apiResponse;
+          const userId = user.ghl_user_id || undefined;
+          const isAdmin = user.role === 'admin';
+
+          if (toolName === 'contacts_get-contacts') {
+            apiResponse = await getContacts(
+              isAdmin || !userId ? {} : { assignedTo: userId }
+            );
+          } else if (toolName === 'opportunities_search-opportunity') {
+            apiResponse = await getOpportunities(
+              isAdmin || !userId ? {} : { assignedTo: userId }
+            );
+          } else {
+            // Unknown tool, return empty response
+            apiResponse = { success: false, error: 'Unknown tool' };
+          }
 
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
-            content: JSON.stringify(mcpResponse.data),
+            content: JSON.stringify(apiResponse.data || {}),
           });
         }
 
