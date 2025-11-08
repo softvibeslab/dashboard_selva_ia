@@ -50,21 +50,63 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       }),
     });
 
-    const data = await response.json();
+    // Check if response is SSE (text/event-stream) or JSON
+    const contentType = response.headers.get('content-type');
 
-    if (!response.ok || data.error) {
-      console.error('❌ MCP Error:', response.status, data.error || data);
+    if (contentType?.includes('text/event-stream')) {
+      // Handle Server-Sent Events
+      const text = await response.text();
+      const lines = text.split('\n');
+      let jsonData = '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          jsonData = line.substring(6); // Remove 'data: ' prefix
+          break;
+        }
+      }
+
+      if (!jsonData) {
+        console.error('❌ MCP Error: No data in SSE response');
+        return {
+          success: false,
+          error: 'No data in SSE response',
+        };
+      }
+
+      const data = JSON.parse(jsonData);
+
+      if (data.error) {
+        console.error('❌ MCP Error:', data.error);
+        return {
+          success: false,
+          error: data.error?.message || 'MCP Error',
+        };
+      }
+
+      console.log('✅ MCP Success:', tool);
       return {
-        success: false,
-        error: data.error?.message || `MCP Error: ${response.status}`,
+        success: true,
+        data: data.result,
+      };
+    } else {
+      // Handle regular JSON
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        console.error('❌ MCP Error:', response.status, data.error || data);
+        return {
+          success: false,
+          error: data.error?.message || `MCP Error: ${response.status}`,
+        };
+      }
+
+      console.log('✅ MCP Success:', tool);
+      return {
+        success: true,
+        data: data.result,
       };
     }
-
-    console.log('✅ MCP Success:', tool);
-    return {
-      success: true,
-      data: data.result,
-    };
   } catch (error) {
     console.error('❌ MCP Exception:', error);
     return {
