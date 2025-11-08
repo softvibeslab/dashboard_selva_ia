@@ -40,25 +40,30 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
         'locationId': LOCATION_ID,
       },
       body: JSON.stringify({
-        tool,
-        input: filteredInput,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: tool,
+          arguments: filteredInput,
+        },
+        id: Date.now(),
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ MCP Error:', response.status, errorText);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error('❌ MCP Error:', response.status, data.error || data);
       return {
         success: false,
-        error: `MCP Error: ${response.status} - ${errorText}`,
+        error: data.error?.message || `MCP Error: ${response.status}`,
       };
     }
 
-    const data = await response.json();
     console.log('✅ MCP Success:', tool);
     return {
       success: true,
-      data,
+      data: data.result,
     };
   } catch (error) {
     console.error('❌ MCP Exception:', error);
