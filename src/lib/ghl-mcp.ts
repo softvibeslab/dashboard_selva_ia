@@ -34,6 +34,7 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
         'Authorization': `Bearer ${GHL_TOKEN}`,
         'X-API-Key': GHL_API_KEY,
         'locationId': LOCATION_ID,
