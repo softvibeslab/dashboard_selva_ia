@@ -383,7 +383,7 @@ Responde en español de manera clara y profesional. Usa formato markdown cuando 
     ];
 
     const aiResponse = await callEdgeFunction({
-      model: 'claude-3-5-sonnet-20240620',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
@@ -423,7 +423,7 @@ Responde en español de manera clara y profesional. Usa formato markdown cuando 
         }
 
         const finalData = await callEdgeFunction({
-          model: 'claude-3-5-sonnet-20240620',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 4096,
           system: systemPrompt,
           messages: [
