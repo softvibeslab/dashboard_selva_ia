@@ -9,11 +9,27 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (include devDependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Accept build arguments for environment variables
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_GHL_API_KEY
+ARG VITE_GHL_ACCESS_TOKEN
+ARG VITE_GHL_LOCATION_ID
+ARG VITE_ANTHROPIC_API_KEY
+
+# Set environment variables for Vite build
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_GHL_API_KEY=$VITE_GHL_API_KEY
+ENV VITE_GHL_ACCESS_TOKEN=$VITE_GHL_ACCESS_TOKEN
+ENV VITE_GHL_LOCATION_ID=$VITE_GHL_LOCATION_ID
+ENV VITE_ANTHROPIC_API_KEY=$VITE_ANTHROPIC_API_KEY
 
 # Build the application
 RUN npm run build
@@ -26,10 +42,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy PWA files explicitly to ensure they're accessible
-COPY --from=builder /app/dist/manifest.json /usr/share/nginx/html/
-COPY --from=builder /app/dist/service-worker.js /usr/share/nginx/html/
 
 # Expose port 80
 EXPOSE 80
