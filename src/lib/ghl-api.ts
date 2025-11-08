@@ -350,6 +350,51 @@ export async function getCalendarEvents(params?: {
 }
 
 /**
+ * Actualizar un contacto
+ */
+export async function updateContact(contactId: string, data: {
+  assignedTo?: string;
+  tags?: string[];
+  [key: string]: any;
+}): Promise<GHLApiResponse> {
+  try {
+    console.log('📞 GHL API: Updating contact...', { contactId });
+
+    const response = await fetch(
+      `${GHL_API_BASE}/contacts/${contactId}`,
+      {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ GHL API Error:', response.status, errorText);
+      return {
+        success: false,
+        error: `API Error: ${response.status} - ${errorText}`,
+      };
+    }
+
+    const result = await response.json();
+    console.log('✅ GHL API: Contact updated successfully');
+
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    console.error('❌ GHL API Exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Test de conectividad con la API
  */
 export async function testGHLConnection(): Promise<boolean> {

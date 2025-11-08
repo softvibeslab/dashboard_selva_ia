@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { User as UserType } from '../lib/supabase';
-import { callMCPTool, getLocationId } from '../lib/ghl-mcp';
+import { getOpportunities } from '../lib/ghl-api';
 
 interface PipelineViewProps {
   user: UserType;
@@ -57,17 +57,11 @@ export function PipelineView({ user }: PipelineViewProps) {
 
     try {
       const isAdmin = user.role === 'admin';
-      const userId = user.ghl_user_id;
+      const userId = user.ghl_user_id || undefined;
 
-      // Obtener oportunidades
-      const opportunitiesResponse = await callMCPTool(
-        'opportunities_search-opportunity',
-        {
-          locationId: getLocationId(),
-          ...(isAdmin ? {} : { assignedTo: userId }),
-        },
-        user.role,
-        userId
+      // Obtener oportunidades usando REST API
+      const opportunitiesResponse = await getOpportunities(
+        isAdmin || !userId ? {} : { assignedTo: userId }
       );
 
       const opportunities: Opportunity[] =

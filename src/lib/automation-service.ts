@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool, getLocationId } from './ghl-mcp';
+import { getContacts, getContact, getOpportunities, updateContact } from './ghl-api';
 
 // ============================================
 // TYPES & INTERFACES
@@ -67,17 +67,11 @@ export interface FollowUpSuggestion {
 export async function detectHotLeads(user: User): Promise<HotLead[]> {
   try {
     const isAdmin = user.role === 'admin';
-    const userId = user.ghl_user_id;
+    const userId = user.ghl_user_id || undefined;
 
-    // Obtener contactos
-    const contactsResponse = await callMCPTool(
-      'contacts_get-contacts',
-      {
-        locationId: getLocationId(),
-        ...(isAdmin ? {} : { assignedTo: userId }),
-      },
-      user.role,
-      userId
+    // Obtener contactos usando REST API
+    const contactsResponse = await getContacts(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     if (!contactsResponse.success || !contactsResponse.data?.contacts) {
@@ -164,18 +158,18 @@ async function calculateLeadScore(
 
   // Factor 3: Tiene oportunidades activas (20 puntos)
   try {
-    const oppsResponse = await callMCPTool(
-      'opportunities_search-opportunity',
-      {
-        locationId: getLocationId(),
-        contactId: contact.id,
-      },
-      user.role,
-      user.ghl_user_id
+    const userId = user.ghl_user_id || undefined;
+    const oppsResponse = await getOpportunities(
+      user.role === 'admin' || !userId ? {} : { assignedTo: userId }
     );
 
     if (oppsResponse.success && oppsResponse.data?.opportunities) {
-      const activeOpps = oppsResponse.data.opportunities.filter(
+      // Filtrar oportunidades por contactId
+      const contactOpps = oppsResponse.data.opportunities.filter(
+        (opp: any) => opp.contact?.id === contact.id || opp.contactId === contact.id
+      );
+
+      const activeOpps = contactOpps.filter(
         (opp: any) => opp.status !== 'won' && opp.status !== 'lost'
       );
 
@@ -240,17 +234,11 @@ async function calculateLeadScore(
 export async function generateFollowUpSuggestions(user: User): Promise<FollowUpSuggestion[]> {
   try {
     const isAdmin = user.role === 'admin';
-    const userId = user.ghl_user_id;
+    const userId = user.ghl_user_id || undefined;
 
-    // Obtener oportunidades
-    const oppsResponse = await callMCPTool(
-      'opportunities_search-opportunity',
-      {
-        locationId: getLocationId(),
-        ...(isAdmin ? {} : { assignedTo: userId }),
-      },
-      user.role,
-      userId
+    // Obtener oportunidades usando REST API
+    const oppsResponse = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     if (!oppsResponse.success || !oppsResponse.data?.opportunities) {
@@ -351,16 +339,8 @@ export async function suggestAutoAssignment(
   user: User
 ): Promise<AssignmentRule | null> {
   try {
-    // Obtener detalles del contacto
-    const contactResponse = await callMCPTool(
-      'contacts_get-contact',
-      {
-        locationId: getLocationId(),
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    // Obtener detalles del contacto usando REST API
+    const contactResponse = await getContact(contactId);
 
     if (!contactResponse.success || !contactResponse.data?.contact) {
       return null;
@@ -410,16 +390,9 @@ export async function executeAutoAssignment(
   user: User
 ): Promise<boolean> {
   try {
-    const response = await callMCPTool(
-      'contacts_update-contact',
-      {
-        locationId: getLocationId(),
-        contactId: contactId,
-        assignedTo: userId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    const response = await updateContact(contactId, {
+      assignedTo: userId,
+    });
 
     return response.success;
   } catch (error) {
