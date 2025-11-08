@@ -37,7 +37,7 @@ export async function fetchRealMetrics(user: User): Promise<Metrics> {
   try {
     // Parámetros base según el rol del usuario
     const isAdmin = user.role === 'admin';
-    const userId = user.ghl_user_id;
+    const userId = user.user_type || user.ghl_user_id; // Prioritize user_type (GHL ID)
 
     // 1. Obtener contactos (Leads)
     const contactsResponse = await callMCPTool(
