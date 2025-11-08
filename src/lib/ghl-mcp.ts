@@ -85,6 +85,8 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       }
 
       console.log('✅ MCP Success:', tool);
+      console.log('📦 SSE MCP Response:', data);
+      console.log('📦 SSE MCP Result:', data.result);
       return {
         success: true,
         data: data.result,
@@ -102,6 +104,8 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       }
 
       console.log('✅ MCP Success:', tool);
+      console.log('📦 JSON MCP Response:', data);
+      console.log('📦 JSON MCP Result:', data.result);
       return {
         success: true,
         data: data.result,
