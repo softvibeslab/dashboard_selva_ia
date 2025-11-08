@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool } from './ghl-mcp';
+import { callMCPTool, getLocationId } from './ghl-mcp';
 
 // ============================================
 // TYPES & INTERFACES
@@ -73,7 +73,7 @@ export async function detectHotLeads(user: User): Promise<HotLead[]> {
     const contactsResponse = await callMCPTool(
       'contacts_get-contacts',
       {
-        locationId: 'crN2IhAuOBAl7D8324yI',
+        locationId: getLocationId(),
         ...(isAdmin ? {} : { assignedTo: userId }),
       },
       user.role,
@@ -167,7 +167,7 @@ async function calculateLeadScore(
     const oppsResponse = await callMCPTool(
       'opportunities_search-opportunity',
       {
-        locationId: 'crN2IhAuOBAl7D8324yI',
+        locationId: getLocationId(),
         contactId: contact.id,
       },
       user.role,
@@ -246,7 +246,7 @@ export async function generateFollowUpSuggestions(user: User): Promise<FollowUpS
     const oppsResponse = await callMCPTool(
       'opportunities_search-opportunity',
       {
-        locationId: 'crN2IhAuOBAl7D8324yI',
+        locationId: getLocationId(),
         ...(isAdmin ? {} : { assignedTo: userId }),
       },
       user.role,
@@ -355,7 +355,7 @@ export async function suggestAutoAssignment(
     const contactResponse = await callMCPTool(
       'contacts_get-contact',
       {
-        locationId: 'crN2IhAuOBAl7D8324yI',
+        locationId: getLocationId(),
         contactId: contactId,
       },
       user.role,
@@ -413,7 +413,7 @@ export async function executeAutoAssignment(
     const response = await callMCPTool(
       'contacts_update-contact',
       {
-        locationId: 'crN2IhAuOBAl7D8324yI',
+        locationId: getLocationId(),
         contactId: contactId,
         assignedTo: userId,
       },

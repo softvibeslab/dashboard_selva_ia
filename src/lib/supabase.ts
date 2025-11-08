@@ -18,15 +18,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  role?: 'admin' | 'user';
-  user_type?: string; // GoHighLevel user ID
+  name: string;
+  full_name: string;
+  role: 'admin' | 'user';
+  user_type?: string | null; // GoHighLevel user ID (same as ghl_user_id)
+  ghl_user_id?: string | null; // GoHighLevel user ID
   profile_photo?: string | null;
-  created_at?: string;
+  created_at: string;
   last_login?: string | null;
-  // Legacy fields (for backwards compatibility)
-  full_name?: string;
-  ghl_user_id?: string | null;
 }
 
 export interface ChatMessage {

@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ========================================
+   FONDO OSCURO GLOBAL - ARREGLO COMPLETO
+   ======================================== */
+
+html,
+body {
+  background-color: #1c1917; /* stone-900 */
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  background-color: #1c1917; /* stone-900 */
+}
+
+/* Asegurar que no haya fondos blancos en ningún lado */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #44403c #1c1917;
+}
+
+/* Webkit scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1c1917;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #44403c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #57534e;
+}

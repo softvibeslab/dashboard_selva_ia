@@ -121,7 +121,7 @@ export function ExecutiveDashboard({ user }: ExecutiveDashboardProps) {
   }));
 
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto p-6 space-y-6 bg-stone-900">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-stone-50 mb-2">

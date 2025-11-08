@@ -1,7 +1,10 @@
 const MCP_ENDPOINT = 'https://services.leadconnectorhq.com/mcp/';
 const GHL_TOKEN = import.meta.env.VITE_GHL_ACCESS_TOKEN || '';
-const LOCATION_ID = import.meta.env.VITE_GHL_LOCATION_ID || '';
 const GHL_API_KEY = import.meta.env.VITE_GHL_API_KEY || '';
+
+export const getLocationId = (): string => {
+  return import.meta.env.VITE_GHL_LOCATION_ID || 'crN2IhAuOBAl7D8324yI';
+};
 
 export interface MCPRequest {
   tool: string;
@@ -22,11 +25,13 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       filteredInput.assignedTo = userId;
     }
 
+    const locationId = getLocationId();
+
     console.log('🔑 GHL Config:', {
       endpoint: MCP_ENDPOINT,
       hasToken: !!GHL_TOKEN,
       hasApiKey: !!GHL_API_KEY,
-      locationId: LOCATION_ID,
+      locationId,
       tool,
     });
 
@@ -37,7 +42,7 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
         'Accept': 'application/json, text/event-stream',
         'Authorization': `Bearer ${GHL_TOKEN}`,
         'X-API-Key': GHL_API_KEY,
-        'locationId': LOCATION_ID,
+        'locationId': locationId,
       },
       body: JSON.stringify({
         jsonrpc: '2.0',

@@ -174,7 +174,7 @@ export function ChatInterface({ user, onNavigate }: ChatInterfaceProps) {
   const contextSummary = generateContextSummary(user.id);
 
   return (
-    <div className="h-full flex gap-4 p-6">
+    <div className="h-full flex gap-4 p-6 bg-stone-900">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Context Summary Banner */}

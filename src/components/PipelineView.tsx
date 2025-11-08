@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { User as UserType } from '../lib/supabase';
-import { callMCPTool } from '../lib/ghl-mcp';
+import { callMCPTool, getLocationId } from '../lib/ghl-mcp';
 
 interface PipelineViewProps {
   user: UserType;
@@ -63,7 +63,7 @@ export function PipelineView({ user }: PipelineViewProps) {
       const opportunitiesResponse = await callMCPTool(
         'opportunities_search-opportunity',
         {
-          locationId: 'crN2IhAuOBAl7D8324yI',
+          locationId: getLocationId(),
           ...(isAdmin ? {} : { assignedTo: userId }),
         },
         user.role,
@@ -185,7 +185,7 @@ export function PipelineView({ user }: PipelineViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col p-6 bg-stone-900">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">

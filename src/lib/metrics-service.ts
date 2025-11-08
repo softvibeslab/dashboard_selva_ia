@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool } from './ghl-mcp';
+import { getContacts, getOpportunities } from './ghl-api';
 
 export interface Metrics {
   leads: number;
@@ -37,32 +37,20 @@ export async function fetchRealMetrics(user: User): Promise<Metrics> {
   try {
     // Parámetros base según el rol del usuario
     const isAdmin = user.role === 'admin';
-    const userId = user.user_type || user.ghl_user_id; // Prioritize user_type (GHL ID)
+    const userId = user.ghl_user_id || undefined;
 
-    // 1. Obtener contactos (Leads)
-    const contactsResponse = await callMCPTool(
-      'contacts_get-contacts',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        ...(isAdmin ? {} : { assignedTo: userId }),
-      },
-      user.role,
-      userId
+    // 1. Obtener contactos (Leads) usando REST API
+    const contactsResponse = await getContacts(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     const totalLeads = contactsResponse.success && contactsResponse.data?.contacts
       ? contactsResponse.data.contacts.length
       : 0;
 
-    // 2. Obtener oportunidades activas
-    const opportunitiesResponse = await callMCPTool(
-      'opportunities_search-opportunity',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        ...(isAdmin ? {} : { assignedTo: userId }),
-      },
-      user.role,
-      userId
+    // 2. Obtener oportunidades activas usando REST API
+    const opportunitiesResponse = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     const opportunities = opportunitiesResponse.success && opportunitiesResponse.data?.opportunities
@@ -138,17 +126,11 @@ export async function fetchDetailedMetrics(user: User) {
 
   try {
     const isAdmin = user.role === 'admin';
-    const userId = user.ghl_user_id;
+    const userId = user.ghl_user_id || undefined;
 
-    // Obtener oportunidades para análisis detallado
-    const opportunitiesResponse = await callMCPTool(
-      'opportunities_search-opportunity',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        ...(isAdmin ? {} : { assignedTo: userId }),
-      },
-      user.role,
-      userId
+    // Obtener oportunidades para análisis detallado usando REST API
+    const opportunitiesResponse = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     const opportunities = opportunitiesResponse.success && opportunitiesResponse.data?.opportunities

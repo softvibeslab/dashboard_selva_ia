@@ -55,7 +55,7 @@ export function HistoryView({ user }: HistoryViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col p-6 bg-stone-900">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-stone-50 mb-4 flex items-center gap-2">
           <Clock className="w-6 h-6" />

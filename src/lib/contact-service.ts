@@ -1,5 +1,5 @@
 import { User } from './supabase';
-import { callMCPTool } from './ghl-mcp';
+import { getContact, getContacts, getOpportunities, getContactTasks, getConversations, getCalendarEvents } from './ghl-api';
 
 export interface Contact {
   id: string;
@@ -59,15 +59,7 @@ export async function getContactDetails(
   user: User
 ): Promise<Contact | null> {
   try {
-    const response = await callMCPTool(
-      'contacts_get-contact',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    const response = await getContact(contactId);
 
     if (!response.success || !response.data?.contact) {
       return null;
@@ -103,21 +95,25 @@ export async function getContactOpportunities(
   user: User
 ): Promise<ContactOpportunity[]> {
   try {
-    const response = await callMCPTool(
-      'opportunities_search-opportunity',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
+    // Note: GoHighLevel REST API doesn't have direct contactId filter for opportunities
+    // We'll fetch all opportunities for the user and filter by contactId
+    const userId = user.ghl_user_id || undefined;
+    const isAdmin = user.role === 'admin';
+
+    const response = await getOpportunities(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     if (!response.success || !response.data?.opportunities) {
       return [];
     }
 
-    return response.data.opportunities.map((opp: any) => ({
+    // Filter opportunities by contactId
+    const contactOpps = response.data.opportunities.filter(
+      (opp: any) => opp.contact?.id === contactId || opp.contactId === contactId
+    );
+
+    return contactOpps.map((opp: any) => ({
       id: opp.id,
       name: opp.name || 'Sin título',
       status: opp.status || 'unknown',
@@ -144,16 +140,8 @@ export async function getContactTimeline(
   const activities: ContactActivity[] = [];
 
   try {
-    // Obtener tareas
-    const tasksResponse = await callMCPTool(
-      'contacts_get-all-tasks',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    // Obtener tareas usando REST API
+    const tasksResponse = await getContactTasks(contactId);
 
     if (tasksResponse.success && tasksResponse.data?.tasks) {
       tasksResponse.data.tasks.forEach((task: any) => {
@@ -171,16 +159,8 @@ export async function getContactTimeline(
       });
     }
 
-    // Obtener conversaciones
-    const conversationsResponse = await callMCPTool(
-      'conversations_search-conversation',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    // Obtener conversaciones usando REST API
+    const conversationsResponse = await getConversations({ contactId });
 
     if (conversationsResponse.success && conversationsResponse.data?.conversations) {
       conversationsResponse.data.conversations.forEach((conv: any) => {
@@ -197,16 +177,8 @@ export async function getContactTimeline(
       });
     }
 
-    // Obtener citas del calendario
-    const eventsResponse = await callMCPTool(
-      'calendars_get-calendar-events',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        contactId: contactId,
-      },
-      user.role,
-      user.ghl_user_id
-    );
+    // Obtener citas del calendario usando REST API
+    const eventsResponse = await getCalendarEvents({ contactId });
 
     if (eventsResponse.success && eventsResponse.data?.events) {
       eventsResponse.data.events.forEach((event: any) => {
@@ -430,14 +402,11 @@ export async function searchContacts(
   user: User
 ): Promise<Contact[]> {
   try {
-    const response = await callMCPTool(
-      'contacts_get-contacts',
-      {
-        locationId: 'crN2IhAuOBAl7D8324yI',
-        ...(user.role === 'user' ? { assignedTo: user.ghl_user_id } : {}),
-      },
-      user.role,
-      user.ghl_user_id
+    const userId = user.ghl_user_id || undefined;
+    const isAdmin = user.role === 'admin';
+
+    const response = await getContacts(
+      isAdmin || !userId ? {} : { assignedTo: userId }
     );
 
     if (!response.success || !response.data?.contacts) {

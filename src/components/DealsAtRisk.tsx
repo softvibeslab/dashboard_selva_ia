@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { User as UserType } from '../lib/supabase';
-import { callMCPTool } from '../lib/ghl-mcp';
+import { callMCPTool, getLocationId } from '../lib/ghl-mcp';
 
 interface DealsAtRiskProps {
   user: UserType;
@@ -52,7 +52,7 @@ export function DealsAtRisk({ user }: DealsAtRiskProps) {
       const opportunitiesResponse = await callMCPTool(
         'opportunities_search-opportunity',
         {
-          locationId: 'crN2IhAuOBAl7D8324yI',
+          locationId: getLocationId(),
           ...(isAdmin ? {} : { assignedTo: userId }),
         },
         user.role,

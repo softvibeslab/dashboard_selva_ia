@@ -22,7 +22,7 @@ export function AutomationsView({ user }: AutomationsViewProps) {
   ];
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col p-6 bg-stone-900">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-stone-50 mb-2 flex items-center gap-3">
