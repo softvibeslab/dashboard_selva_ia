@@ -86,10 +86,31 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
 
       console.log('✅ MCP Success:', tool);
       console.log('📦 SSE MCP Response:', data);
-      console.log('📦 SSE MCP Result:', data.result);
+
+      // Handle nested JSON structure from GHL MCP
+      let actualData = data.result;
+
+      // First level: result.content[0].text
+      if (actualData?.content && Array.isArray(actualData.content) && actualData.content[0]?.text) {
+        try {
+          const firstLevel = JSON.parse(actualData.content[0].text);
+          // Second level: content[0].text again
+          if (firstLevel?.content && Array.isArray(firstLevel.content) && firstLevel.content[0]?.text) {
+            const secondLevel = JSON.parse(firstLevel.content[0].text);
+            // Third level: actual GHL data
+            if (secondLevel?.data) {
+              actualData = secondLevel.data;
+            }
+          }
+        } catch (e) {
+          console.warn('Could not parse nested JSON, using original result');
+        }
+      }
+
+      console.log('📦 SSE MCP Final Data:', actualData);
       return {
         success: true,
-        data: data.result,
+        data: actualData,
       };
     } else {
       // Handle regular JSON
@@ -105,10 +126,31 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
 
       console.log('✅ MCP Success:', tool);
       console.log('📦 JSON MCP Response:', data);
-      console.log('📦 JSON MCP Result:', data.result);
+
+      // Handle nested JSON structure from GHL MCP
+      let actualData = data.result;
+
+      // First level: result.content[0].text
+      if (actualData?.content && Array.isArray(actualData.content) && actualData.content[0]?.text) {
+        try {
+          const firstLevel = JSON.parse(actualData.content[0].text);
+          // Second level: content[0].text again
+          if (firstLevel?.content && Array.isArray(firstLevel.content) && firstLevel.content[0]?.text) {
+            const secondLevel = JSON.parse(firstLevel.content[0].text);
+            // Third level: actual GHL data
+            if (secondLevel?.data) {
+              actualData = secondLevel.data;
+            }
+          }
+        } catch (e) {
+          console.warn('Could not parse nested JSON, using original result');
+        }
+      }
+
+      console.log('📦 JSON MCP Final Data:', actualData);
       return {
         success: true,
-        data: data.result,
+        data: actualData,
       };
     }
   } catch (error) {
