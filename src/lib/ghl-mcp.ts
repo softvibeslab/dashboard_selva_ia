@@ -1,6 +1,7 @@
 const MCP_ENDPOINT = 'https://services.leadconnectorhq.com/mcp/';
-const GHL_TOKEN = 'pit-84d7687f-d43f-4434-9804-c671c669dd0f';
-const LOCATION_ID = 'crN2IhAuOBAl7D8324yI';
+const GHL_TOKEN = import.meta.env.VITE_GHL_ACCESS_TOKEN || '';
+const LOCATION_ID = import.meta.env.VITE_GHL_LOCATION_ID || '';
+const GHL_API_KEY = import.meta.env.VITE_GHL_API_KEY || '';
 
 export interface MCPRequest {
   tool: string;
@@ -21,11 +22,20 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
       filteredInput.assignedTo = userId;
     }
 
+    console.log('🔑 GHL Config:', {
+      endpoint: MCP_ENDPOINT,
+      hasToken: !!GHL_TOKEN,
+      hasApiKey: !!GHL_API_KEY,
+      locationId: LOCATION_ID,
+      tool,
+    });
+
     const response = await fetch(MCP_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${GHL_TOKEN}`,
+        'X-API-Key': GHL_API_KEY,
         'locationId': LOCATION_ID,
       },
       body: JSON.stringify({
@@ -36,6 +46,7 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ MCP Error:', response.status, errorText);
       return {
         success: false,
         error: `MCP Error: ${response.status} - ${errorText}`,
@@ -43,11 +54,13 @@ export async function callMCPTool(tool: string, input: Record<string, any>, user
     }
 
     const data = await response.json();
+    console.log('✅ MCP Success:', tool);
     return {
       success: true,
       data,
     };
   } catch (error) {
+    console.error('❌ MCP Exception:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
